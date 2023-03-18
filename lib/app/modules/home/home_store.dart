@@ -10,7 +10,13 @@ class HomeStore extends NotifierStore<Exception, Player> {
 
   Future<void> getPlayer(String? name) async {
     setLoading(true);
-    update(await datasource.getPlayer(name));
+
+    try {
+      update(await datasource.getPlayer(name));
+    } on Exception catch (e) {
+      setError(e);
+    }
+
     setLoading(false);
   }
 }

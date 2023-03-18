@@ -145,7 +145,7 @@ class Character {
   final String? lastLogin;
   final int? level;
   final String? marriedTo;
-  final String? name;
+  final String name;
   final String? residence;
   final String? sex;
   final String? title;
@@ -166,7 +166,7 @@ class Character {
     this.lastLogin,
     this.level,
     this.marriedTo,
-    this.name,
+    required this.name,
     this.residence,
     this.sex,
     this.title,
@@ -196,7 +196,7 @@ class Character {
         lastLogin = json['last_login'] as String?,
         level = json['level'] as int?,
         marriedTo = json['married_to'] as String?,
-        name = json['name'] as String?,
+        name = json['name'] == '' ? {throw Exception()} : json['name'],
         residence = json['residence'] as String?,
         sex = json['sex'] as String?,
         title = json['title'] as String?,

@@ -11,8 +11,13 @@ class TibiaDataSource {
   Future<Player> getPlayer(String? name) async {
     try {
       final result = await dio.get('/character/$name');
+
+      Player player = Player.fromJson(result.data);
+
+      print(player.characters?.character!.name);
+
       return Player.fromJson(result.data);
-    } catch (e) {
+    } catch (error) {
       throw Exception();
     }
   }
