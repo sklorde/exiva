@@ -39,6 +39,7 @@ dependencies:
   flutter_triple: ^1.2.8-dev.1
   dio: ^5.0.2
   google_fonts: ^4.0.3
+  image_network: ^2.5.1
 
 dev_dependencies:
   flutter_test:
@@ -72,8 +73,6 @@ flutter:
     - lib\app\shared\utils\images\knight.png
     - lib\app\shared\utils\images\sorcerer.png
     - lib\app\shared\utils\images\paladin.png
-    - lib\app\shared\utils\images\male.png 
-    - lib\app\shared\utils\images\female.png 
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

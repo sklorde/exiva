@@ -1,3 +1,5 @@
+import 'monster.dart';
+
 class Player {
   final Characters? characters;
   final Information? information;
@@ -330,12 +332,14 @@ class Killers {
   final bool? player;
   final String? summon;
   final bool? traded;
+  Monster? monster;
 
   Killers({
     this.name,
     this.player,
     this.summon,
     this.traded,
+    this.monster,
   });
 
   Killers.fromJson(Map<String, dynamic> json)
