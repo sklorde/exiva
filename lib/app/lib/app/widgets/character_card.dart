@@ -72,7 +72,7 @@ class CharacterCard extends StatelessWidget {
                         '${player.characters?.character!.name}',
                         style: GoogleFonts.poppins(
                           textStyle: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 19,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -86,6 +86,7 @@ class CharacterCard extends StatelessWidget {
                       mainAxisSpacing: 16.0,
                       crossAxisSpacing: 16.0,
                       childAspectRatio: 1.0,
+                      physics: const NeverScrollableScrollPhysics(),
                       children: <Widget>[
                         _buildInfo('LEVEL'),
                         _buildInfo('SEX'),
