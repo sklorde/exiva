@@ -14,7 +14,7 @@ class TibiaDataSource {
 
       Player player = Player.fromJson(result.data);
 
-      print(player.characters?.character!.name);
+      print(player.characters?.character!.vocation);
 
       return Player.fromJson(result.data);
     } catch (error) {
