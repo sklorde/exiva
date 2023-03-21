@@ -3,6 +3,7 @@ import 'package:exiva/app/shared/models/player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_triple/flutter_triple.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../shared/utils/functions/upper_word.dart';
 import 'home_store.dart';
 
@@ -99,6 +100,8 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       decoration: InputDecoration(
                                         border: InputBorder.none,
+                                        contentPadding:
+                                            const EdgeInsets.only(bottom: 5),
                                         hintText: 'Character name',
                                         hintStyle: TextStyle(
                                           fontSize: 13,
@@ -124,9 +127,9 @@ class _HomePageState extends State<HomePage> {
                                       const Color.fromRGBO(88, 101, 241, 1),
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Exiva!',
-                                    style: TextStyle(
+                                    style: GoogleFonts.poppins(
                                       color: Colors.white,
                                     ),
                                   ),

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class CharacterDetail extends StatelessWidget {
   final Player player;
+
   const CharacterDetail({
     Key? key,
     required this.player,
@@ -12,112 +13,131 @@ class CharacterDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Column(
-          children: [
-            Transform.scale(
-              scale: 0.8,
-              child: FutureBuilder(
-                builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  } else {
-                    return Image.asset(
-                      vocationImages[player.characters?.character!.vocation]!,
-                    );
-                  }
-                },
-              ),
-            ),
-            Text(
-              '${(player.characters?.character!.vocation)?.toUpperCase()}',
-              style: GoogleFonts.poppins(
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                  letterSpacing: 1.3,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Text(
-              '${player.characters?.character!.name}',
-              style: GoogleFonts.poppins(
-                textStyle: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
         Expanded(
-          child: GridView.count(
-            crossAxisCount: 3,
-            mainAxisSpacing: 16.0,
-            crossAxisSpacing: 16.0,
-            childAspectRatio: 1.0,
-            physics: const NeverScrollableScrollPhysics(),
-            children: <Widget>[
-              _buildInfo('LEVEL'),
-              _buildInfo('SEX'),
-              _buildInfo('WORLD'),
-            ],
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Column(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: AspectRatio(
+                        aspectRatio: 1.0,
+                        child: Image.asset(
+                          vocationImages[
+                              player.characters?.character!.vocation]!,
+                          fit: BoxFit.fitHeight,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${(player.characters?.character!.vocation)}',
+                            style: GoogleFonts.poppins(
+                              textStyle: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                                letterSpacing: 1.3,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${player.characters?.character!.name}',
+                            style: GoogleFonts.poppins(
+                              textStyle: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (player.characters?.character!.comment != null)
+                            Text(
+                              '"${player.characters?.character!.comment}"',
+                              style: GoogleFonts.poppins(
+                                textStyle: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          children: [
+                            GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 4,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                              childAspectRatio: 0.7,
+                              children: [
+                                _buildInfo(
+                                    'LEVEL',
+                                    player.characters?.character?.level
+                                        ?.toString()),
+                                _buildInfo(
+                                    'SEX', player.characters?.character?.sex),
+                                _buildInfo('WORLD',
+                                    player.characters?.character?.world),
+                                _buildInfo('RESIDENCE',
+                                    player.characters?.character?.residence),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        )
+        ),
       ],
     );
   }
 
-  Widget _buildInfo(String title) {
-    String? valor;
-    switch (title) {
-      case 'LEVEL':
-        valor = player.characters?.character?.level?.toString();
-        break;
-      case 'SEX':
-        valor = player.characters?.character?.sex;
-        break;
-      case 'WORLD':
-        valor = player.characters?.character?.world;
-        break;
-      default:
-        valor = '';
-    }
-
-    return SizedBox(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              textStyle: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-                letterSpacing: 1.3,
-                fontWeight: FontWeight.w500,
-              ),
+  Widget _buildInfo(String title, String? value) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            textStyle: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+              letterSpacing: 1.3,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          Text(
-            valor.toString().toUpperCase(),
-            style: GoogleFonts.poppins(
-              textStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+        ),
+        Text(
+          value?.toUpperCase() ?? '',
+          style: GoogleFonts.poppins(
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
-            textAlign: TextAlign.center,
           ),
-        ],
-      ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }
