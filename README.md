@@ -39,4 +39,4 @@ This software uses the following open source packages:
 - [Tibia Data](https://tibiadata.com/) [RESTful API]
 
 ## License
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
