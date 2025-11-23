@@ -41,7 +41,6 @@ async function connectToWhatsApp() {
         sock = makeWASocket({
             version,
             logger,
-            printQRInTerminal: true,
             auth: state,
             // Add browser config
             browser: ['WIFE WhatsApp Service', 'Chrome', '1.0.0']
@@ -55,18 +54,30 @@ async function connectToWhatsApp() {
             const { connection, lastDisconnect, qr } = update;
 
             if (qr) {
-                logger.info('QR Code received, generating data URL...');
-                qrCodeData = await qrcode.toDataURL(qr);
-                isAuthenticated = false;
+                try {
+                    logger.info('QR Code received, generating data URL...');
+                    qrCodeData = await qrcode.toDataURL(qr);
+                    isAuthenticated = false;
+                    logger.info('QR Code data URL generated successfully');
+                } catch (error) {
+                    logger.error(`Error generating QR code data URL: ${error.message}`);
+                }
             }
 
             if (connection === 'close') {
                 const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-                logger.info(`Connection closed, reconnecting: ${shouldReconnect}`);
+                const statusCode = lastDisconnect?.error?.output?.statusCode;
+                logger.info(`Connection closed with status code: ${statusCode}, reconnecting: ${shouldReconnect}`);
+                
+                if (lastDisconnect?.error) {
+                    logger.error(`Connection error: ${lastDisconnect.error.message}`);
+                }
+                
                 isAuthenticated = false;
                 
                 if (shouldReconnect) {
-                    connectToWhatsApp();
+                    // Add a small delay before reconnecting to avoid rapid reconnection loops
+                    setTimeout(() => connectToWhatsApp(), 3000);
                 }
             } else if (connection === 'open') {
                 logger.info('WhatsApp connection opened successfully');
