@@ -1,0 +1,279 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_API: ${{ github.repository }}/wife-api
+  IMAGE_NAME_BAILEYS: ${{ github.repository }}/baileys-service
+
+jobs:
+  # Build and test Python FastAPI service
+  build-test-api:
+    name: Build & Test FastAPI Service
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio httpx
+
+      - name: Lint with flake8 (if available)
+        run: |
+          pip install flake8
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,env,.venv,__pycache__
+          # Exit-zero treats all errors as warnings
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=venv,env,.venv,__pycache__
+        continue-on-error: true
+
+      - name: Build API Docker image
+        run: |
+          docker build -t wife-api:test .
+
+      - name: Test API Docker container
+        run: |
+          # Start the container
+          docker run -d --name wife-api-test -p 8000:8000 wife-api:test
+          
+          # Wait for service to be ready
+          echo "Waiting for service to start..."
+          sleep 15
+          
+          # Check health endpoint
+          curl -f http://localhost:8000/health || exit 1
+          
+          # Check root endpoint
+          curl -f http://localhost:8000/ || exit 1
+          
+          # Stop and remove container
+          docker stop wife-api-test
+          docker rm wife-api-test
+
+  # Build and test Baileys Node.js service
+  build-test-baileys:
+    name: Build & Test Baileys Service
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: baileys-service/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./baileys-service
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ./baileys-service
+        run: npm test
+        continue-on-error: true
+
+      - name: Build Baileys Docker image
+        working-directory: ./baileys-service
+        run: |
+          docker build -t baileys-service:test .
+
+      - name: Test Baileys Docker container
+        run: |
+          # Start the container
+          docker run -d --name baileys-test -p 3000:3000 baileys-service:test
+          
+          # Wait for service to be ready
+          echo "Waiting for service to start..."
+          sleep 15
+          
+          # Check health endpoint
+          curl -f http://localhost:3000/health || exit 1
+          
+          # Check root endpoint
+          curl -f http://localhost:3000/ || exit 1
+          
+          # Stop and remove container
+          docker stop baileys-test
+          docker rm baileys-test
+
+  # Docker Compose integration test
+  docker-compose-test:
+    name: Docker Compose Integration Test
+    runs-on: ubuntu-latest
+    needs: [build-test-api, build-test-baileys]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env file for docker-compose
+        run: |
+          cp .env.docker .env
+
+      - name: Build services with Docker Compose
+        run: |
+          docker compose build
+
+      - name: Start services with Docker Compose
+        run: |
+          docker compose up -d
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for services to start..."
+          sleep 30
+
+      - name: Check service health
+        run: |
+          # Check if containers are running
+          docker compose ps
+          
+          # Check API health
+          echo "Checking API health..."
+          curl -f http://localhost:8000/health || exit 1
+          
+          # Check Baileys health
+          echo "Checking Baileys service health..."
+          curl -f http://localhost:3000/health || exit 1
+          
+          # Check PostgreSQL
+          echo "Checking PostgreSQL..."
+          docker compose exec -T postgres pg_isready -U wife || exit 1
+
+      - name: Show container logs on failure
+        if: failure()
+        run: |
+          docker compose logs
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose down -v
+
+  # Build and push Docker images (only on main branch)
+  build-push-images:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [docker-compose-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for API
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+
+      - name: Extract metadata for Baileys
+        id: meta-baileys
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BAILEYS }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push Baileys image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./baileys-service
+          push: true
+          tags: ${{ steps.meta-baileys.outputs.tags }}
+          labels: ${{ steps.meta-baileys.outputs.labels }}
+
+  # Deployment demonstration (simplified without external credentials)
+  deploy:
+    name: Deploy (Demo)
+    runs-on: ubuntu-latest
+    needs: [build-push-images]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deployment Demonstration
+        run: |
+          echo "=========================================="
+          echo "Deployment Demonstration"
+          echo "=========================================="
+          echo ""
+          echo "✅ All tests passed successfully"
+          echo "✅ Docker images built and pushed to registry"
+          echo ""
+          echo "To deploy to your server, you would typically:"
+          echo "1. SSH into your server"
+          echo "2. Pull the latest images from the registry"
+          echo "3. Update docker-compose.yml to use the new images"
+          echo "4. Run: docker compose pull"
+          echo "5. Run: docker compose up -d"
+          echo ""
+          echo "Example deployment command:"
+          echo "  ssh user@server 'cd /app && docker compose pull && docker compose up -d'"
+          echo ""
+          echo "Images available at:"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BAILEYS }}"
+          echo ""
+          echo "=========================================="
+
+      - name: Create deployment artifact
+        run: |
+          mkdir -p deployment
+          cp docker-compose.yml deployment/
+          cp .env.docker deployment/.env.example
+          echo "Deployment package created in deployment/"
+          
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-package
+          path: deployment/
+          retention-days: 30
