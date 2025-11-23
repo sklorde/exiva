@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  wife-api:
+    build: .
+    container_name: wife-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - wife-data:/app/data
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DATABASE_PATH=/app/data/wife_detections.db
+    restart: unless-stopped
+
+volumes:
+  wife-data:
