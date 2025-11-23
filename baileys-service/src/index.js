@@ -28,7 +28,9 @@ let sock = null;
 let qrCodeData = null;
 let isAuthenticated = false;
 let connectionRetries = 0;
-const MAX_RETRIES = 10; // Max retries before giving up temporarily
+const MAX_RETRIES = parseInt(process.env.MAX_CONNECTION_RETRIES) || 10;
+const RETRY_DELAY_MS = parseInt(process.env.RETRY_DELAY_MS) || 3000;
+const MAX_RETRY_BACKOFF_MS = parseInt(process.env.MAX_RETRY_BACKOFF_MS) || 30000;
 
 /**
  * Initialize WhatsApp connection
@@ -81,13 +83,13 @@ async function connectToWhatsApp() {
                     connectionRetries++;
                     
                     if (connectionRetries > MAX_RETRIES) {
-                        logger.warn(`Max retries (${MAX_RETRIES}) reached. Waiting 30 seconds before trying again...`);
+                        logger.warn(`Max retries (${MAX_RETRIES}) reached. Waiting ${MAX_RETRY_BACKOFF_MS}ms before trying again...`);
                         connectionRetries = 0; // Reset counter
-                        setTimeout(() => connectToWhatsApp(), 30000);
+                        setTimeout(() => connectToWhatsApp(), MAX_RETRY_BACKOFF_MS);
                     } else {
                         // Add a small delay before reconnecting to avoid rapid reconnection loops
-                        logger.info(`Retry attempt ${connectionRetries}/${MAX_RETRIES} in 3 seconds...`);
-                        setTimeout(() => connectToWhatsApp(), 3000);
+                        logger.info(`Retry attempt ${connectionRetries}/${MAX_RETRIES} in ${RETRY_DELAY_MS}ms...`);
+                        setTimeout(() => connectToWhatsApp(), RETRY_DELAY_MS);
                     }
                 }
             } else if (connection === 'open') {
