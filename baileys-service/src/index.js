@@ -27,6 +27,10 @@ const logger = P({ level: process.env.LOG_LEVEL || 'info' });
 let sock = null;
 let qrCodeData = null;
 let isAuthenticated = false;
+let connectionRetries = 0;
+const MAX_RETRIES = parseInt(process.env.MAX_CONNECTION_RETRIES) || 10;
+const RETRY_DELAY_MS = parseInt(process.env.RETRY_DELAY_MS) || 3000;
+const MAX_RETRY_BACKOFF_MS = parseInt(process.env.MAX_RETRY_BACKOFF_MS) || 30000;
 
 /**
  * Initialize WhatsApp connection
@@ -41,7 +45,6 @@ async function connectToWhatsApp() {
         sock = makeWASocket({
             version,
             logger,
-            printQRInTerminal: true,
             auth: state,
             // Add browser config
             browser: ['WIFE WhatsApp Service', 'Chrome', '1.0.0']
@@ -55,23 +58,45 @@ async function connectToWhatsApp() {
             const { connection, lastDisconnect, qr } = update;
 
             if (qr) {
-                logger.info('QR Code received, generating data URL...');
-                qrCodeData = await qrcode.toDataURL(qr);
-                isAuthenticated = false;
+                try {
+                    logger.info('QR Code received, generating data URL...');
+                    qrCodeData = await qrcode.toDataURL(qr);
+                    isAuthenticated = false;
+                    logger.info('QR Code data URL generated successfully');
+                } catch (error) {
+                    logger.error(`Error generating QR code data URL: ${error.message}`);
+                }
             }
 
             if (connection === 'close') {
                 const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-                logger.info(`Connection closed, reconnecting: ${shouldReconnect}`);
+                const statusCode = lastDisconnect?.error?.output?.statusCode;
+                logger.info(`Connection closed with status code: ${statusCode}, reconnecting: ${shouldReconnect}`);
+                
+                if (lastDisconnect?.error) {
+                    logger.error(`Connection error: ${lastDisconnect.error.message}`);
+                }
+                
                 isAuthenticated = false;
                 
                 if (shouldReconnect) {
-                    connectToWhatsApp();
+                    connectionRetries++;
+                    
+                    if (connectionRetries > MAX_RETRIES) {
+                        logger.warn(`Max retries (${MAX_RETRIES}) reached. Waiting ${MAX_RETRY_BACKOFF_MS}ms before trying again...`);
+                        connectionRetries = 0; // Reset counter
+                        setTimeout(() => connectToWhatsApp(), MAX_RETRY_BACKOFF_MS);
+                    } else {
+                        // Add a small delay before reconnecting to avoid rapid reconnection loops
+                        logger.info(`Retry attempt ${connectionRetries}/${MAX_RETRIES} in ${RETRY_DELAY_MS}ms...`);
+                        setTimeout(() => connectToWhatsApp(), RETRY_DELAY_MS);
+                    }
                 }
             } else if (connection === 'open') {
                 logger.info('WhatsApp connection opened successfully');
                 isAuthenticated = true;
                 qrCodeData = null;
+                connectionRetries = 0; // Reset retry counter on successful connection
             }
         });
 

@@ -327,6 +327,12 @@ DATABASE_PATH=wife_detections.db
 PORT=3000
 HOST=0.0.0.0
 LOG_LEVEL=info
+BROWSER_NAME=WIFE WhatsApp Service
+
+# Connection retry settings
+MAX_CONNECTION_RETRIES=10
+RETRY_DELAY_MS=3000
+MAX_RETRY_BACKOFF_MS=30000
 ```
 
 ## Volumes and Data Persistence
