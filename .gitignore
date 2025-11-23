@@ -61,6 +61,7 @@ Thumbs.db
 uploads/
 *.db
 *.sqlite3
+.env
 
 # YOLO model files (downloaded automatically)
 *.pt
