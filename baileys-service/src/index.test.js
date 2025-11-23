@@ -2,10 +2,6 @@
  * Basic tests for Baileys service API endpoints
  */
 
-const request = require('supertest');
-const express = require('express');
-
-// Mock app for testing
 describe('Baileys Service API Tests', () => {
     
     test('should have a health endpoint', () => {
