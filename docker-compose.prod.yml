@@ -1,5 +1,8 @@
 version: '3.8'
 
+# Production Docker Compose Configuration
+# Use this file for production deployments with images from GitHub Container Registry
+
 services:
   # PostgreSQL Database
   postgres:
@@ -7,26 +10,29 @@ services:
     container_name: wife-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-wife}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wife_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-wife_db}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wife"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wife}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    restart: always
     networks:
       - wife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
 
   # Python FastAPI Service
   wife-api:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/sklorde/exiva/wife-api:main
     container_name: wife-api
     ports:
       - "${API_PORT:-8000}:8000"
@@ -40,20 +46,23 @@ services:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER:-wife}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-wife_password}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB:-wife_db}
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+    restart: always
     networks:
       - wife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
 
   # Node.js Baileys WhatsApp Service
   baileys-service:
-    build:
-      context: ./baileys-service
-      dockerfile: Dockerfile
+    image: ghcr.io/sklorde/exiva/baileys-service:main
     container_name: baileys-service
     ports:
       - "${BAILEYS_PORT:-3000}:3000"
@@ -62,10 +71,15 @@ services:
     environment:
       - PORT=3000
       - HOST=0.0.0.0
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-    restart: unless-stopped
+      - LOG_LEVEL=${LOG_LEVEL:-warn}
+    restart: always
     networks:
       - wife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
 
   # Portainer - Docker Management UI
   portainer:
@@ -79,9 +93,14 @@ services:
       - portainer-data:/data
     environment:
       - PORTAINER_ADMIN_PASSWORD=${PORTAINER_ADMIN_PASSWORD:-}
-    restart: unless-stopped
+    restart: always
     networks:
       - wife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
 
 volumes:
   wife-data:
