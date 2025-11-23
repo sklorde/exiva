@@ -74,22 +74,32 @@ sleep 15
 echo ""
 echo "Checking service health..."
 
-SERVICES=("wife-api:8000" "baileys-service:3000" "portainer:9000")
 FAILED=0
 
-for SERVICE in "${SERVICES[@]}"; do
-    NAME="${SERVICE%%:*}"
-    PORT="${SERVICE##*:}"
-    
-    if curl -f -s "http://localhost:$PORT/health" > /dev/null 2>&1 || \
-       curl -f -s "http://localhost:$PORT/" > /dev/null 2>&1 || \
-       curl -f -s "http://localhost:$PORT/api/status" > /dev/null 2>&1; then
-        echo "✓ $NAME is healthy"
-    else
-        echo "❌ $NAME health check failed"
-        FAILED=1
-    fi
-done
+# Check FastAPI
+if curl -f -s "http://localhost:8000/health" > /dev/null 2>&1; then
+    echo "✓ wife-api is healthy"
+else
+    echo "❌ wife-api health check failed"
+    FAILED=1
+fi
+
+# Check Baileys
+if curl -f -s "http://localhost:3000/health" > /dev/null 2>&1; then
+    echo "✓ baileys-service is healthy"
+else
+    echo "❌ baileys-service health check failed"
+    FAILED=1
+fi
+
+# Check Portainer
+if curl -f -s "http://localhost:9000/api/status" > /dev/null 2>&1 || \
+   curl -f -s "http://localhost:9000/" > /dev/null 2>&1; then
+    echo "✓ portainer is healthy"
+else
+    echo "❌ portainer health check failed"
+    FAILED=1
+fi
 
 # Show container status
 echo ""
