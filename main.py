@@ -7,7 +7,9 @@ from fastapi.responses import JSONResponse
 from typing import Optional, List
 from datetime import datetime
 import os
+import uuid
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 from app.services.object_detection import ObjectDetectionService
 from app.services.database import DatabaseService
@@ -18,32 +20,32 @@ from app.models.schemas import (
     HealthResponse
 )
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="WIFE - Where Is For Everyone",
-    description="Object recognition and tracking microservice",
-    version="1.0.0"
-)
+# Create uploads directory
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Initialize services
 detection_service = ObjectDetectionService()
 db_service = DatabaseService()
 
-# Create uploads directory
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
 
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan (startup and shutdown)"""
+    # Startup
     await db_service.initialize()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
+    yield
+    # Shutdown
     await db_service.close()
+
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="WIFE - Where Is For Everyone",
+    description="Object recognition and tracking microservice",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 
 @app.get("/", tags=["Root"])
@@ -78,14 +80,27 @@ async def detect_objects(
     - **file**: Image file (JPEG, PNG)
     - **location**: Location where the photo was taken
     """
-    # Validate file type
-    if not file.content_type.startswith("image/"):
+    # Validate file type from content
+    if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    # Save uploaded file temporarily
-    file_path = UPLOAD_DIR / f"{datetime.now().timestamp()}_{file.filename}"
+    # Generate secure filename using UUID
+    file_extension = Path(file.filename).suffix if file.filename else ".jpg"
+    secure_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = UPLOAD_DIR / secure_filename
+    
     try:
+        # Save uploaded file
         contents = await file.read()
+        
+        # Additional validation: try to verify it's actually an image
+        try:
+            from PIL import Image
+            import io
+            Image.open(io.BytesIO(contents)).verify()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid image file")
+        
         with open(file_path, "wb") as f:
             f.write(contents)
         
@@ -102,9 +117,6 @@ async def detect_objects(
                 timestamp=timestamp
             )
         
-        # Clean up file
-        os.remove(file_path)
-        
         return DetectionResponse(
             success=True,
             objects_detected=len(detections),
@@ -113,11 +125,14 @@ async def detect_objects(
             timestamp=timestamp.isoformat()
         )
     
+    except HTTPException:
+        raise
     except Exception as e:
-        # Clean up file on error
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+    finally:
+        # Clean up file in all cases
         if file_path.exists():
             os.remove(file_path)
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 
 @app.get("/api/objects", response_model=List[str], tags=["Objects"])
