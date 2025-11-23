@@ -1,14 +1,4 @@
-FROM node:20-alpine
-
-# Install system dependencies
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    cairo-dev \
-    jpeg-dev \
-    pango-dev \
-    giflib-dev
+FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
@@ -17,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --only=production --loglevel=error
 
 # Copy application code
 COPY . .

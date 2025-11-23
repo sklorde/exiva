@@ -1,0 +1,113 @@
+version: '3.8'
+
+# Production Docker Compose Configuration
+# Use this file for production deployments with images from GitHub Container Registry
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: wife-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wife}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-wife_db}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wife}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - wife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # Python FastAPI Service
+  wife-api:
+    image: ghcr.io/sklorde/exiva/wife-api:main
+    container_name: wife-api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - wife-data:/app/data
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DATABASE_PATH=/app/data/wife_detections.db
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-wife}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-wife_db}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    networks:
+      - wife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+
+  # Node.js Baileys WhatsApp Service
+  baileys-service:
+    image: ghcr.io/sklorde/exiva/baileys-service:main
+    container_name: baileys-service
+    ports:
+      - "${BAILEYS_PORT:-3000}:3000"
+    volumes:
+      - baileys-auth:/app/auth_info
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - LOG_LEVEL=${LOG_LEVEL:-warn}
+    restart: always
+    networks:
+      - wife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # Portainer - Docker Management UI
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    ports:
+      - "${PORTAINER_PORT:-9000}:9000"
+      - "${PORTAINER_HTTPS_PORT:-9443}:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    environment:
+      - PORTAINER_ADMIN_PASSWORD=${PORTAINER_ADMIN_PASSWORD:-}
+    restart: always
+    networks:
+      - wife-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+volumes:
+  wife-data:
+  postgres-data:
+  baileys-auth:
+  portainer-data:
+
+networks:
+  wife-network:
+    driver: bridge
