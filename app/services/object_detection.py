@@ -6,6 +6,7 @@ from typing import List, Dict
 import cv2
 import numpy as np
 from pathlib import Path
+import torch
 
 
 class ObjectDetectionService:
@@ -18,6 +19,21 @@ class ObjectDetectionService:
         Args:
             model_name: YOLO model to use (default: yolov8n.pt - nano model)
         """
+        # Fix for PyTorch 2.6+ weights_only=True default
+        # Add ultralytics classes to safe globals to allow model loading
+        try:
+            from ultralytics.nn.tasks import DetectionModel, SegmentationModel, ClassificationModel, PoseModel, OBBModel
+            torch.serialization.add_safe_globals([
+                DetectionModel,
+                SegmentationModel, 
+                ClassificationModel,
+                PoseModel,
+                OBBModel
+            ])
+        except (ImportError, AttributeError):
+            # If add_safe_globals doesn't exist (older PyTorch), continue without it
+            pass
+        
         self.model = YOLO(model_name)
         
     async def detect_objects(self, image_path: str, confidence_threshold: float = 0.5) -> List[Dict]:
