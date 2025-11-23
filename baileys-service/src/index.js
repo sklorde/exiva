@@ -27,6 +27,8 @@ const logger = P({ level: process.env.LOG_LEVEL || 'info' });
 let sock = null;
 let qrCodeData = null;
 let isAuthenticated = false;
+let connectionRetries = 0;
+const MAX_RETRIES = 10; // Max retries before giving up temporarily
 
 /**
  * Initialize WhatsApp connection
@@ -76,13 +78,23 @@ async function connectToWhatsApp() {
                 isAuthenticated = false;
                 
                 if (shouldReconnect) {
-                    // Add a small delay before reconnecting to avoid rapid reconnection loops
-                    setTimeout(() => connectToWhatsApp(), 3000);
+                    connectionRetries++;
+                    
+                    if (connectionRetries > MAX_RETRIES) {
+                        logger.warn(`Max retries (${MAX_RETRIES}) reached. Waiting 30 seconds before trying again...`);
+                        connectionRetries = 0; // Reset counter
+                        setTimeout(() => connectToWhatsApp(), 30000);
+                    } else {
+                        // Add a small delay before reconnecting to avoid rapid reconnection loops
+                        logger.info(`Retry attempt ${connectionRetries}/${MAX_RETRIES} in 3 seconds...`);
+                        setTimeout(() => connectToWhatsApp(), 3000);
+                    }
                 }
             } else if (connection === 'open') {
                 logger.info('WhatsApp connection opened successfully');
                 isAuthenticated = true;
                 qrCodeData = null;
+                connectionRetries = 0; // Reset retry counter on successful connection
             }
         });
 
