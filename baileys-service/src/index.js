@@ -143,12 +143,20 @@ app.get('/qr', async (req, res) => {
     }
 
     try {
-        // Extract base64 data from data URL (format: data:image/png;base64,...)
-        const base64Data = qrCodeData.replace(/^data:image\/png;base64,/, '');
+        // Extract MIME type and base64 data from data URL (format: data:image/png;base64,...)
+        const matches = qrCodeData.match(/^data:([^;]+);base64,(.+)$/);
+        
+        if (!matches) {
+            logger.error('Invalid QR code data URL format');
+            return res.status(500).send('Invalid QR code data format');
+        }
+        
+        const mimeType = matches[1];
+        const base64Data = matches[2];
         const imageBuffer = Buffer.from(base64Data, 'base64');
         
         // Set content type and send image
-        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Type', mimeType);
         res.setHeader('Content-Length', imageBuffer.length);
         res.send(imageBuffer);
     } catch (error) {
