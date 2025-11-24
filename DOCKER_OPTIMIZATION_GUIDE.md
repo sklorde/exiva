@@ -88,6 +88,29 @@ docker compose up -d
 
 The first build will take time to download PyTorch, models, etc. Subsequent builds will be much faster due to Docker layer caching.
 
+**To use a different YOLO model:**
+
+```bash
+# Build with a larger model (better accuracy, slower)
+docker compose build --build-arg YOLO_MODEL=yolov8s.pt
+
+# Or modify docker-compose.yml to add build args:
+services:
+  wife-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        YOLO_MODEL: yolov8s.pt
+```
+
+Available YOLO models (nano to extra-large):
+- `yolov8n.pt` - Nano (fastest, default)
+- `yolov8s.pt` - Small
+- `yolov8m.pt` - Medium
+- `yolov8l.pt` - Large
+- `yolov8x.pt` - Extra Large (best accuracy)
+
 ### Build with GPU Support
 
 First, ensure you have:
@@ -98,8 +121,36 @@ First, ensure you have:
 # Build the image
 docker compose build
 
-# Start services with GPU support
+# Start services with GPU support (all GPUs)
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+```
+
+**For production or to use a specific GPU:**
+
+Create a custom GPU configuration file or modify `docker-compose.gpu.yml`:
+
+```yaml
+# Use single GPU
+services:
+  wife-api:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+# Or specify GPU by device ID
+services:
+  wife-api:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']  # Use GPU 0
+              capabilities: [gpu]
 ```
 
 ### Verify GPU Access
@@ -269,7 +320,8 @@ If the model isn't found despite being downloaded during build:
 
 1. **Verify NVIDIA runtime is installed:**
    ```bash
-   docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+   # Test with a simple CUDA container (use your system's CUDA version)
+   docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
    ```
 
 2. **Check GPU is visible in container:**
@@ -283,6 +335,8 @@ If the model isn't found despite being downloaded during build:
    docker compose exec wife-api python3 -c \
      "import torch; print(torch.cuda.is_available())"
    ```
+
+**Note:** If the above commands fail, check that your NVIDIA driver and PyTorch CUDA versions are compatible.
 
 ## Best Practices
 

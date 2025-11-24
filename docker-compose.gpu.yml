@@ -11,7 +11,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: all
+              count: all  # Use 'count: 1' for single GPU or specify device_ids for production
               capabilities: [gpu]
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
