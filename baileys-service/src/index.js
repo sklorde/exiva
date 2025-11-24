@@ -135,23 +135,26 @@ app.get('/health', (req, res) => {
  */
 app.get('/qr', async (req, res) => {
     if (isAuthenticated) {
-        return res.json({
-            authenticated: true,
-            message: 'Already authenticated'
-        });
+        return res.status(200).send('Already authenticated. No QR code needed.');
     }
 
     if (!qrCodeData) {
-        return res.status(404).json({
-            error: 'QR code not available yet',
-            message: 'Please wait for the QR code to be generated'
-        });
+        return res.status(404).send('QR code not available yet. Please wait for the QR code to be generated.');
     }
 
-    res.json({
-        qrCode: qrCodeData,
-        authenticated: false
-    });
+    try {
+        // Extract base64 data from data URL (format: data:image/png;base64,...)
+        const base64Data = qrCodeData.replace(/^data:image\/png;base64,/, '');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        
+        // Set content type and send image
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Length', imageBuffer.length);
+        res.send(imageBuffer);
+    } catch (error) {
+        logger.error(`Error sending QR code image: ${error.message}`);
+        res.status(500).send('Error generating QR code image');
+    }
 });
 
 /**

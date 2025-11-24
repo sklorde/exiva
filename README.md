@@ -206,9 +206,13 @@ npm start
 #### Connection & Status
 - `GET /` - Service information
 - `GET /health` - Health check endpoint
-- `GET /qr` - Get QR code for WhatsApp authentication
+- `GET /qr` - Get QR code image for WhatsApp authentication (returns PNG image)
   ```bash
-  curl "http://localhost:3000/qr"
+  # View in browser
+  open http://localhost:3000/qr
+  
+  # Or download to file
+  curl "http://localhost:3000/qr" -o qr-code.png
   ```
 - `GET /status` - Get authentication status
   ```bash
