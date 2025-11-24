@@ -16,6 +16,7 @@
   <a href="#getting-started">Getting Started</a> •
   <a href="#api-endpoints">API Endpoints</a> •
   <a href="#ci-cd-pipeline">CI/CD Pipeline</a> •
+  <a href="CONTAINER_LOGGING.md">Container Logging</a> •
   <a href="#license">License</a>
 </p>
 
@@ -131,6 +132,24 @@ The system consists of four main services orchestrated with Docker Compose:
    # Or for a specific service
    docker compose logs -f wife-api
    docker compose logs -f baileys-service
+   ```
+
+   **View logs inside containers**
+   
+   Application logs are written to files inside containers for debugging. See [CONTAINER_LOGGING.md](CONTAINER_LOGGING.md) for detailed information.
+   
+   ```bash
+   # FastAPI service logs
+   docker exec -it wife-api cat /var/log/uvicorn.log
+   docker exec -it wife-api tail -f /var/log/uvicorn.log
+   
+   # Baileys service logs
+   docker exec -it baileys-service cat /app/logs/messages.log
+   docker exec -it baileys-service tail -f /app/logs/messages.log
+   
+   # Interactive shell access to view logs
+   docker exec -it wife-api /bin/bash
+   docker exec -it baileys-service /bin/sh
    ```
 
 7. **Stop services**
@@ -400,6 +419,22 @@ docker run --rm -v portainer-data:/data -v $(pwd):/backup alpine tar czf /backup
    
    # Check PostgreSQL logs
    docker compose logs postgres
+   ```
+
+5. **Viewing container logs**
+   
+   Application logs are stored inside containers for debugging:
+   
+   ```bash
+   # View FastAPI logs inside container
+   docker exec -it wife-api tail -f /var/log/uvicorn.log
+   
+   # View Baileys service logs inside container
+   docker exec -it baileys-service tail -f /app/logs/messages.log
+   
+   # Access container shell for detailed inspection
+   docker exec -it wife-api /bin/bash
+   docker exec -it baileys-service /bin/sh
    ```
 
 ### Resetting Everything

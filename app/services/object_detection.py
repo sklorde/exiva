@@ -9,6 +9,11 @@ from pathlib import Path
 import torch
 
 
+class ServiceNotInitializedException(Exception):
+    """Exception raised when a service method is called before initialization"""
+    pass
+
+
 class ObjectDetectionService:
     """Service for detecting objects in images using YOLO"""
     
@@ -19,6 +24,11 @@ class ObjectDetectionService:
         Args:
             model_name: YOLO model to use (default: yolov8n.pt - nano model)
         """
+        self.model_name = model_name
+        self.model = None
+        
+    async def initialize(self):
+        """Initialize the YOLO model (async startup)"""
         # Fix for PyTorch 2.6+ weights_only=True default
         # Add ultralytics classes to safe globals to allow model loading
         try:
@@ -34,7 +44,7 @@ class ObjectDetectionService:
             # If add_safe_globals doesn't exist (older PyTorch), continue without it
             pass
         
-        self.model = YOLO(model_name)
+        self.model = YOLO(self.model_name)
         
     async def detect_objects(self, image_path: str, confidence_threshold: float = 0.5) -> List[Dict]:
         """
@@ -47,6 +57,9 @@ class ObjectDetectionService:
         Returns:
             List of detected objects with their properties
         """
+        if self.model is None:
+            raise ServiceNotInitializedException("ObjectDetectionService not initialized. Call initialize() first.")
+        
         # Run inference
         results = self.model(image_path, conf=confidence_threshold, verbose=False)
         
@@ -74,4 +87,6 @@ class ObjectDetectionService:
     
     def get_available_classes(self) -> List[str]:
         """Get list of object classes the model can detect"""
+        if self.model is None:
+            raise ServiceNotInitializedException("ObjectDetectionService not initialized. Call initialize() first.")
         return list(self.model.names.values())
