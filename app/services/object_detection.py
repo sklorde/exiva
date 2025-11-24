@@ -19,6 +19,11 @@ class ObjectDetectionService:
         Args:
             model_name: YOLO model to use (default: yolov8n.pt - nano model)
         """
+        self.model_name = model_name
+        self.model = None
+        
+    async def initialize(self):
+        """Initialize the YOLO model (async startup)"""
         # Fix for PyTorch 2.6+ weights_only=True default
         # Add ultralytics classes to safe globals to allow model loading
         try:
@@ -34,7 +39,7 @@ class ObjectDetectionService:
             # If add_safe_globals doesn't exist (older PyTorch), continue without it
             pass
         
-        self.model = YOLO(model_name)
+        self.model = YOLO(self.model_name)
         
     async def detect_objects(self, image_path: str, confidence_threshold: float = 0.5) -> List[Dict]:
         """

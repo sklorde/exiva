@@ -12,8 +12,8 @@ RUN npm ci --only=production --loglevel=error
 # Copy application code
 COPY . .
 
-# Create directory for auth data
-RUN mkdir -p /app/auth_info && chmod 777 /app/auth_info
+# Create directory for auth data and logs
+RUN mkdir -p /app/auth_info /app/logs && chmod 777 /app/auth_info /app/logs
 
 # Expose port
 EXPOSE 3000

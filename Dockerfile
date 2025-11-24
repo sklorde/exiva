@@ -31,7 +31,7 @@ RUN python3 -c "from ultralytics import YOLO; YOLO('${YOLO_MODEL}')" && \
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p uploads data
+RUN mkdir -p uploads data /var/log /app/logs
 
 # Expose port
 EXPOSE 8000
@@ -40,5 +40,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application with logging
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info --access-log > /var/log/uvicorn.log 2>&1"]

@@ -33,6 +33,7 @@ db_service = DatabaseService()
 async def lifespan(app: FastAPI):
     """Manage application lifespan (startup and shutdown)"""
     # Startup
+    await detection_service.initialize()
     await db_service.initialize()
     yield
     # Shutdown

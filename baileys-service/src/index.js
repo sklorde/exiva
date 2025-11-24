@@ -12,6 +12,8 @@ const {
     fetchLatestBaileysVersion
 } = require('@whiskeysockets/baileys');
 const P = require('pino');
+const fs = require('fs');
+const path = require('path');
 const qrcode = require('qrcode');
 const { handleIncomingMessage } = require('./forward_image_to_wife');
 
@@ -21,8 +23,18 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
-// Logger configuration
-const logger = P({ level: process.env.LOG_LEVEL || 'info' });
+// Ensure log directory exists
+const logDir = '/app/logs';
+if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+}
+
+// Logger configuration with file transport
+const logFile = path.join(logDir, 'messages.log');
+const logger = P(
+    { level: process.env.LOG_LEVEL || 'info' },
+    P.destination(logFile)
+);
 
 // Store for sessions
 let sock = null;
