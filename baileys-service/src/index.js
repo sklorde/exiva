@@ -13,6 +13,7 @@ const {
 } = require('@whiskeysockets/baileys');
 const P = require('pino');
 const qrcode = require('qrcode');
+const { handleIncomingMessage } = require('./forward_image_to_wife');
 
 const app = express();
 app.use(express.json());
@@ -107,6 +108,12 @@ async function connectToWhatsApp() {
             for (const message of messages) {
                 if (!message.key.fromMe && message.message) {
                     logger.info(`Message from ${message.key.remoteJid}: ${JSON.stringify(message.message)}`);
+                }
+
+                try {
+                    await handleIncomingMessage(sock, message);
+                } catch (err) {
+                    logger.error('Erro no processamento de message.upsert:', err);
                 }
             }
         });
