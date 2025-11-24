@@ -16,6 +16,7 @@
   <a href="#getting-started">Getting Started</a> •
   <a href="#api-endpoints">API Endpoints</a> •
   <a href="#ci-cd-pipeline">CI/CD Pipeline</a> •
+  <a href="CONTAINER_LOGGING.md">Container Logging</a> •
   <a href="#license">License</a>
 </p>
 
@@ -135,7 +136,7 @@ The system consists of four main services orchestrated with Docker Compose:
 
    **View logs inside containers**
    
-   To view log files inside running containers:
+   Application logs are written to files inside containers for debugging. See [CONTAINER_LOGGING.md](CONTAINER_LOGGING.md) for detailed information.
    
    ```bash
    # FastAPI service logs
