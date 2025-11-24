@@ -66,6 +66,32 @@ jobs:
           docker stop wife-api-test
           docker rm wife-api-test
 
+      - name: Verify CPU-only configuration
+        run: |
+          # Verify no CUDA libraries in the image
+          echo "Verifying CPU-only configuration..."
+          docker run --rm wife-api:test python3 -c "
+import sys
+try:
+    import torch
+    cuda_available = torch.cuda.is_available()
+    if cuda_available:
+        print('ERROR: CUDA is available, but should be CPU-only', file=sys.stderr)
+        sys.exit(1)
+    else:
+        print('✓ CPU-only configuration verified: torch.cuda.is_available() = False')
+except ImportError:
+    print('✓ CPU-only configuration verified: torch not installed or CUDA not available')
+          "
+          
+          # Verify no CUDA directories exist
+          if docker run --rm wife-api:test test -d /usr/local/cuda; then
+            echo "ERROR: /usr/local/cuda directory exists"
+            exit 1
+          else
+            echo "✓ No CUDA directory found"
+          fi
+
   # Build and test Baileys Node.js service
   build-test-baileys:
     name: Build & Test Baileys Service

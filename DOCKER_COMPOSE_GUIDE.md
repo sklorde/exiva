@@ -291,26 +291,6 @@ docker compose up -d
 
 ## Advanced Usage
 
-### GPU Support
-
-To enable NVIDIA GPU support for faster object detection:
-
-1. **Prerequisites:**
-   - NVIDIA drivers installed on the host
-   - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed
-
-2. **Start with GPU support:**
-   ```bash
-   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-   ```
-
-3. **Verify GPU is accessible:**
-   ```bash
-   docker compose exec wife-api python3 -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
-   ```
-
-For more details, see [DOCKER_OPTIMIZATION_GUIDE.md](DOCKER_OPTIMIZATION_GUIDE.md).
-
 ### Environment-Specific Configs
 
 Development:

@@ -6,8 +6,7 @@ This guide explains how to optimize Docker builds for the WIFE application to re
 
 The WIFE application uses YOLO (via Ultralytics) for object detection, which requires:
 - Large deep learning models (YOLO weights)
-- PyTorch with CUDA support for GPU acceleration
-- Various dependencies totaling ~13GB in the final image
+- PyTorch and various dependencies
 
 Without optimization, every `docker compose up -d` or container rebuild would:
 - Re-download YOLO model weights at runtime
@@ -61,22 +60,9 @@ The Dockerfile is structured to maximize layer caching:
 - Skip expensive model downloads if dependencies haven't changed
 - Faster iterative development
 
-### 4. Optional GPU Support
-
-A separate compose file enables NVIDIA GPU support:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-```
-
-**Benefits:**
-- Opt-in GPU acceleration
-- No GPU runtime required for CPU-only deployments
-- Flexible deployment options
-
 ## Usage Instructions
 
-### Standard Build (No GPU)
+### Standard Build
 
 ```bash
 # First time build (downloads everything)
@@ -110,55 +96,6 @@ Available YOLO models (nano to extra-large):
 - `yolov8m.pt` - Medium
 - `yolov8l.pt` - Large
 - `yolov8x.pt` - Extra Large (best accuracy)
-
-### Build with GPU Support
-
-First, ensure you have:
-- NVIDIA drivers installed
-- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed
-
-```bash
-# Build the image
-docker compose build
-
-# Start services with GPU support (all GPUs)
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-```
-
-**For production or to use a specific GPU:**
-
-Create a custom GPU configuration file or modify `docker-compose.gpu.yml`:
-
-```yaml
-# Use single GPU
-services:
-  wife-api:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-# Or specify GPU by device ID
-services:
-  wife-api:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['0']  # Use GPU 0
-              capabilities: [gpu]
-```
-
-### Verify GPU Access
-
-```bash
-# Check if GPU is accessible in the container
-docker compose exec wife-api python3 -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
-```
 
 ### Managing Model Cache
 
@@ -316,28 +253,6 @@ If the model isn't found despite being downloaded during build:
    docker compose build --no-cache wife-api
    ```
 
-### GPU not working
-
-1. **Verify NVIDIA runtime is installed:**
-   ```bash
-   # Test with a simple CUDA container (use your system's CUDA version)
-   docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
-   ```
-
-2. **Check GPU is visible in container:**
-   ```bash
-   docker compose -f docker-compose.yml -f docker-compose.gpu.yml \
-     exec wife-api nvidia-smi
-   ```
-
-3. **Verify PyTorch can see CUDA:**
-   ```bash
-   docker compose exec wife-api python3 -c \
-     "import torch; print(torch.cuda.is_available())"
-   ```
-
-**Note:** If the above commands fail, check that your NVIDIA driver and PyTorch CUDA versions are compatible.
-
 ## Best Practices
 
 1. **Keep dependencies stable:** Only update requirements.txt when necessary
@@ -349,6 +264,4 @@ If the model isn't found despite being downloaded during build:
 ## Additional Resources
 
 - [Docker BuildKit Documentation](https://docs.docker.com/build/buildkit/)
-- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/)
 - [Ultralytics YOLO Documentation](https://docs.ultralytics.com/)
-- [Docker Compose GPU Support](https://docs.docker.com/compose/gpu-support/)

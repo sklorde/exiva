@@ -1,10 +1,10 @@
 # Summary of Docker Optimization Changes
 
 ## Problema Original (Portuguese)
-O processo `docker compose up -d` do WIFE estava extremamente demorado devido aos requisitos relacionados ao NVIDIA. A imagem/container após o build pesava aproximadamente 13GB, e os modelos YOLO eram baixados toda vez que o container era reiniciado.
+O processo `docker compose up -d` do WIFE estava extremamente demorado. A imagem/container após o build pesava aproximadamente 13GB, e os modelos YOLO eram baixados toda vez que o container era reiniciado.
 
 ## Original Problem (English)
-The `docker compose up -d` process for WIFE was extremely slow due to NVIDIA-related requirements. The image/container after build weighed approximately 13GB, and YOLO models were downloaded every time the container was restarted.
+The `docker compose up -d` process for WIFE was extremely slow. The image/container after build weighed approximately 13GB, and YOLO models were downloaded every time the container was restarted.
 
 ---
 
@@ -37,25 +37,7 @@ The `docker compose up -d` process for WIFE was extremely slow due to NVIDIA-rel
 - ✅ Evita downloads redundantes
 - ✅ Permite backup fácil do cache de modelos
 
-### 3. **Suporte Opcional para GPU / Optional GPU Support**
-
-**Arquivo criado / Created file:** `docker-compose.gpu.yml`
-
-**O que foi feito / What was done:**
-- Criado arquivo separado para habilitar aceleração por GPU NVIDIA
-- Suporte opt-in: não requer GPU se não for usado
-
-**Como usar / How to use:**
-```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-```
-
-**Benefício / Benefit:**
-- ✅ Inferência mais rápida com GPU (quando disponível)
-- ✅ Não quebra em ambientes sem GPU
-- ✅ Flexível para diferentes cenários de deployment
-
-### 4. **Documentação Completa / Complete Documentation**
+### 3. **Documentação Completa / Complete Documentation**
 
 **Arquivo criado / Created file:** `DOCKER_OPTIMIZATION_GUIDE.md`
 
@@ -90,15 +72,6 @@ docker compose build
 docker compose up -d
 ```
 
-### Build com GPU / Build with GPU
-```bash
-# Build da imagem / Build image
-docker compose build
-
-# Iniciar com GPU / Start with GPU
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-```
-
 ### Usar Modelo YOLO Diferente / Use Different YOLO Model
 ```bash
 # Modelos disponíveis / Available models:
@@ -118,10 +91,9 @@ docker compose build --build-arg YOLO_MODEL=yolov8s.pt
 1. ✅ `Dockerfile` - Pre-download de modelos + build args
 2. ✅ `docker-compose.yml` - Volume de cache adicionado
 3. ✅ `docker-compose.prod.yml` - Volume de cache adicionado
-4. ✅ `docker-compose.gpu.yml` - **NOVO** - Suporte GPU
-5. ✅ `DOCKER_OPTIMIZATION_GUIDE.md` - **NOVO** - Guia completo
-6. ✅ `DOCKER_COMPOSE_GUIDE.md` - Atualizado com novas informações
-7. ✅ `README.md` - Atualizado com referências ao guia
+4. ✅ `DOCKER_OPTIMIZATION_GUIDE.md` - **NOVO** - Guia completo
+5. ✅ `DOCKER_COMPOSE_GUIDE.md` - Atualizado com novas informações
+6. ✅ `README.md` - Atualizado com referências ao guia
 
 ---
 
@@ -157,14 +129,9 @@ docker compose build --build-arg YOLO_MODEL=yolov8s.pt
 ## Dúvidas Comuns / Common Questions
 
 ### P: O tamanho da imagem mudou? / Q: Did the image size change?
-**R:** A imagem ainda terá ~13GB porque os modelos YOLO e PyTorch são grandes. A diferença é que agora os modelos estão incluídos na imagem ao invés de serem baixados toda vez.
+**R:** A imagem terá aproximadamente o tamanho dos modelos YOLO e PyTorch. A diferença é que agora os modelos estão incluídos na imagem ao invés de serem baixados toda vez.
 
-**A:** The image will still be ~13GB because YOLO models and PyTorch are large. The difference is that now the models are included in the image instead of being downloaded every time.
-
-### P: Preciso da GPU para usar? / Q: Do I need a GPU to use this?
-**R:** Não! Por padrão funciona em CPU. GPU é opcional para inferência mais rápida.
-
-**A:** No! By default it works on CPU. GPU is optional for faster inference.
+**A:** The image will be approximately the size of YOLO models and PyTorch. The difference is that now the models are included in the image instead of being downloaded every time.
 
 ### P: Posso usar modelos customizados? / Q: Can I use custom models?
 **R:** Sim! Use o build argument `YOLO_MODEL` ou configure via variável de ambiente `YOLO_MODEL` na aplicação.
