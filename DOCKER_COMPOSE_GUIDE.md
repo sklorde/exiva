@@ -2,6 +2,8 @@
 
 This guide explains how to use Docker Compose to run the WIFE application stack.
 
+> **Note:** For Docker build optimization and performance tips, see [DOCKER_OPTIMIZATION_GUIDE.md](DOCKER_OPTIMIZATION_GUIDE.md).
+
 ## Services Overview
 
 The docker-compose.yml file defines four services:
@@ -183,11 +185,12 @@ Portainer provides a user-friendly web interface for managing Docker containers:
 
 ### Named Volumes
 
-The setup uses four named volumes:
+The setup uses five named volumes:
 - `wife-data`: FastAPI application data
 - `postgres-data`: PostgreSQL database
 - `baileys-auth`: WhatsApp authentication data
 - `portainer-data`: Portainer configuration and data
+- `model-cache`: YOLO model cache (prevents re-downloading models)
 
 List volumes:
 ```bash
@@ -199,6 +202,7 @@ Inspect a volume:
 docker volume inspect exiva_wife-data
 docker volume inspect exiva_postgres-data
 docker volume inspect exiva_baileys-auth
+docker volume inspect exiva_model-cache
 ```
 
 ### Backup Volumes
@@ -211,6 +215,11 @@ docker run --rm -v exiva_wife-data:/data -v $(pwd):/backup alpine tar czf /backu
 Backup postgres-data:
 ```bash
 docker run --rm -v exiva_postgres-data:/data -v $(pwd):/backup alpine tar czf /backup/postgres-backup.tar.gz -C /data .
+```
+
+Backup model-cache (YOLO models):
+```bash
+docker run --rm -v exiva_model-cache:/data -v $(pwd):/backup alpine tar czf /backup/model-cache-backup.tar.gz -C /data .
 ```
 
 ### Restore Volumes
@@ -281,6 +290,26 @@ docker compose up -d
 ```
 
 ## Advanced Usage
+
+### GPU Support
+
+To enable NVIDIA GPU support for faster object detection:
+
+1. **Prerequisites:**
+   - NVIDIA drivers installed on the host
+   - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed
+
+2. **Start with GPU support:**
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+   ```
+
+3. **Verify GPU is accessible:**
+   ```bash
+   docker compose exec wife-api python3 -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
+   ```
+
+For more details, see [DOCKER_OPTIMIZATION_GUIDE.md](DOCKER_OPTIMIZATION_GUIDE.md).
 
 ### Environment-Specific Configs
 
