@@ -97,6 +97,8 @@ The system consists of four main services orchestrated with Docker Compose:
    docker compose build
    docker compose up -d
    ```
+   
+   > **Note:** The first build will take 15-20 minutes to download dependencies and models. Subsequent builds will be much faster (~30 seconds for code changes only). See [DOCKER_OPTIMIZATION_GUIDE.md](DOCKER_OPTIMIZATION_GUIDE.md) for optimization tips.
 
 4. **Check service health**
    ```bash
@@ -348,6 +350,8 @@ The Docker Compose setup uses named volumes for data persistence:
 - `baileys-auth`: WhatsApp authentication session data
 - `portainer-data`: Portainer configuration and settings
 - `./uploads`: Mounted directory for uploaded images
+
+> **Important:** YOLO models are pre-downloaded during the Docker build process and cached in the `model-cache` volume. This prevents re-downloading models on every container restart. See [DOCKER_OPTIMIZATION_GUIDE.md](DOCKER_OPTIMIZATION_GUIDE.md) for details.
 
 To backup your data:
 ```bash

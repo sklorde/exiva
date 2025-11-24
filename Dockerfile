@@ -20,6 +20,13 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -r requirements.txt
 
+# Pre-download YOLO models to avoid downloading at runtime
+# This significantly speeds up container startup and enables offline usage
+# Default model can be overridden with --build-arg YOLO_MODEL=yolov8s.pt
+ARG YOLO_MODEL=yolov8n.pt
+RUN python3 -c "from ultralytics import YOLO; YOLO('${YOLO_MODEL}')" && \
+    echo "YOLO model ${YOLO_MODEL} downloaded successfully"
+
 # Copy application code
 COPY . .
 
