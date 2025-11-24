@@ -147,13 +147,33 @@ app.get('/qr', async (req, res) => {
         const matches = qrCodeData.match(/^data:([^;]+);base64,(.+)$/);
         
         if (!matches) {
-            logger.error('Invalid QR code data URL format');
+            logger.error(`Invalid QR code data URL format: ${qrCodeData.substring(0, 50)}...`);
             return res.status(500).send('Invalid QR code data format');
         }
         
         const mimeType = matches[1];
         const base64Data = matches[2];
+        
+        // Validate MIME type to prevent header injection
+        const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+        if (!allowedMimeTypes.includes(mimeType)) {
+            logger.error(`Invalid or unsupported MIME type: ${mimeType}`);
+            return res.status(500).send('Unsupported image format');
+        }
+        
+        // Validate base64 data format
+        if (!/^[A-Za-z0-9+/]+=*$/.test(base64Data)) {
+            logger.error('Invalid base64 data in QR code data URL');
+            return res.status(500).send('Invalid QR code data format');
+        }
+        
         const imageBuffer = Buffer.from(base64Data, 'base64');
+        
+        // Verify buffer was created successfully
+        if (imageBuffer.length === 0) {
+            logger.error('Failed to create image buffer from base64 data');
+            return res.status(500).send('Failed to generate QR code image');
+        }
         
         // Set content type and send image
         res.setHeader('Content-Type', mimeType);
