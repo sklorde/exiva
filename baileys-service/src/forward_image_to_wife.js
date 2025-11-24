@@ -50,12 +50,12 @@ function extractLocationFromMessage(messageText, defaultLocation = 'whatsapp') {
   return defaultLocation;
 }
 
-async function handleIncomingMessage(conn, msg) {
+async function handleIncomingMessage(conn, msg, logger = console) {
   try {
     if (!msg) return;
     if (msg.key && msg.key.fromMe) return; // ignore messages from the bot itself
 
-    console.debug('Incoming message:', {
+    logger.debug('Incoming message:', {
       remoteJid: msg.key?.remoteJid,
       pushName: msg.pushName || msg.message?.pushName,
       hasMessage: !!msg.message
@@ -70,8 +70,11 @@ async function handleIncomingMessage(conn, msg) {
     if (!media) return;
 
     const mimetype = media.mimetype || 'image/jpeg';
+    
+    // Determine media type based on message type
+    const mediaType = message.imageMessage ? 'image' : 'document';
 
-    const buffer = await bufferFromMessageStream(media, 'image');
+    const buffer = await bufferFromMessageStream(media, mediaType);
 
     const text = message.conversation || message.extendedTextMessage?.text || '';
     const location = extractLocationFromMessage(text, 'from_whatsapp');
@@ -94,12 +97,12 @@ async function handleIncomingMessage(conn, msg) {
 
     if (!res.ok) {
       const textBody = await res.text();
-      console.error('Erro ao enviar para WIFE:', res.status, textBody);
+      logger.error('Error sending to WIFE:', res.status, textBody);
       return;
     }
 
     const result = await res.json();
-    console.info('WIFE detect response:', result);
+    logger.info('WIFE detect response:', result);
 
     const summary = `Detectei ${result.objects_detected} objeto(s):\n` +
       (result.detections && result.detections.length
@@ -109,7 +112,7 @@ async function handleIncomingMessage(conn, msg) {
     await conn.sendMessage(msg.key.remoteJid, { text: summary });
 
   } catch (err) {
-    console.error('Erro no handleIncomingMessage:', err);
+    logger.error('Error in handleIncomingMessage:', err);
   }
 }
 

@@ -111,9 +111,9 @@ async function connectToWhatsApp() {
                 }
 
                 try {
-                    await handleIncomingMessage(sock, message);
+                    await handleIncomingMessage(sock, message, logger);
                 } catch (err) {
-                    logger.error('Erro no processamento de message.upsert:', err);
+                    logger.error('Error processing message.upsert:', err);
                 }
             }
         });
