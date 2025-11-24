@@ -29,11 +29,15 @@ if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
 }
 
-// Logger configuration with file transport
+// Logger configuration with dual output (file and stdout)
 const logFile = path.join(logDir, 'messages.log');
+const streams = [
+    { stream: fs.createWriteStream(logFile, { flags: 'a' }) },
+    { stream: process.stdout }
+];
 const logger = P(
     { level: process.env.LOG_LEVEL || 'info' },
-    P.destination(logFile)
+    P.multistream(streams)
 );
 
 // Store for sessions

@@ -9,6 +9,11 @@ from pathlib import Path
 import torch
 
 
+class ServiceNotInitializedException(Exception):
+    """Exception raised when a service method is called before initialization"""
+    pass
+
+
 class ObjectDetectionService:
     """Service for detecting objects in images using YOLO"""
     
@@ -53,7 +58,7 @@ class ObjectDetectionService:
             List of detected objects with their properties
         """
         if self.model is None:
-            raise RuntimeError("ObjectDetectionService not initialized. Call initialize() first.")
+            raise ServiceNotInitializedException("ObjectDetectionService not initialized. Call initialize() first.")
         
         # Run inference
         results = self.model(image_path, conf=confidence_threshold, verbose=False)
@@ -83,5 +88,5 @@ class ObjectDetectionService:
     def get_available_classes(self) -> List[str]:
         """Get list of object classes the model can detect"""
         if self.model is None:
-            raise RuntimeError("ObjectDetectionService not initialized. Call initialize() first.")
+            raise ServiceNotInitializedException("ObjectDetectionService not initialized. Call initialize() first.")
         return list(self.model.names.values())
