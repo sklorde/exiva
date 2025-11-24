@@ -54,16 +54,22 @@ tail -f messages.log
 
 ## Using Docker Compose Logs
 
-You can still use `docker compose logs` to view stdout/stderr output:
+Logs are written to both files inside containers AND stdout/stderr, so you can use either method:
 
 ```bash
-# View all service logs
+# View all service logs via stdout (recommended for real-time monitoring)
 docker compose logs -f
 
-# View specific service logs
+# View specific service logs via stdout
 docker compose logs -f wife-api
 docker compose logs -f baileys-service
+
+# View logs from files inside containers (recommended for historical logs)
+docker exec wife-api tail -f /var/log/uvicorn.log
+docker exec baileys-service tail -f /app/logs/messages.log
 ```
+
+The FastAPI service uses `tee` to write logs to both the log file and stdout, so you get the best of both worlds.
 
 ## Testing Log Configuration
 
@@ -87,7 +93,8 @@ The application startup has been refactored to avoid blocking operations at impo
 
 1. **Lazy Initialization**: The YOLO model is now loaded during application startup (in the `lifespan` context manager) rather than at module import time
 2. **Async Startup**: The `ObjectDetectionService.initialize()` method is called asynchronously during FastAPI startup
-3. **Log Redirection**: uvicorn output is redirected to `/var/log/uvicorn.log` via shell redirection in the Docker CMD
+3. **Error Handling**: Methods that require the model check if it's initialized and raise a clear error if not
+4. **Dual Logging**: uvicorn output is written to both `/var/log/uvicorn.log` (via `tee`) and stdout, allowing access via both `docker logs` and direct file access
 
 ### Baileys Service
 

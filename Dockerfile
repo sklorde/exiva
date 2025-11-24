@@ -40,5 +40,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application with logging
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info > /var/log/uvicorn.log 2>&1"]
+# Run the application with logging (tee to both file and stdout)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info 2>&1 | tee /var/log/uvicorn.log"]

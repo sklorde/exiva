@@ -52,6 +52,9 @@ class ObjectDetectionService:
         Returns:
             List of detected objects with their properties
         """
+        if self.model is None:
+            raise RuntimeError("ObjectDetectionService not initialized. Call initialize() first.")
+        
         # Run inference
         results = self.model(image_path, conf=confidence_threshold, verbose=False)
         
@@ -79,4 +82,6 @@ class ObjectDetectionService:
     
     def get_available_classes(self) -> List[str]:
         """Get list of object classes the model can detect"""
+        if self.model is None:
+            raise RuntimeError("ObjectDetectionService not initialized. Call initialize() first.")
         return list(self.model.names.values())
